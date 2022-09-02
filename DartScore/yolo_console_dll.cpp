@@ -13,14 +13,15 @@
 
 // It makes sense only for video-Camera (not for video-File)
 // To use - uncomment the following line. Optical-flow is supported only by OpenCV 3.x - 4.x
-//#define TRACK_OPTFLOW
-//#define GPU
+#define TRACK_OPTFLOW
+#define GPU
 
 // To use 3D-stereo camera ZED - uncomment the following line. ZED_SDK should be installed.
 //#define ZED_STEREO
 
 
 #include "yolo_v2_class.hpp"    // imported functions from DLL
+
 
 #ifdef OPENCV
 #ifdef ZED_STEREO
@@ -293,14 +294,13 @@ int main(int argc, char *argv[])
     bool const save_output_videofile = false;   // true - for history
     bool const send_network = false;        // true - for remote detection
     bool const use_kalman_filter = false;   // true - for stationary camera
-
     bool detection_sync = true;             // true - for video-file
+
 #ifdef TRACK_OPTFLOW    // for slow GPU
     detection_sync = false;
     Tracker_optflow tracker_flow;
     //detector.wait_stream = true;
 #endif  // TRACK_OPTFLOW
-
 
     while (true)
     {
@@ -684,7 +684,7 @@ int main(int argc, char *argv[])
                 cv::waitKey(0);
             }
 #else   // OPENCV
-            //std::vector<bbox_t> result_vec = detector.detect(filename);
+            std::vector<bbox_t> result_vec = detector.detect(filename);
 
             auto img = detector.load_image(filename);
             std::vector<bbox_t> result_vec = detector.detect(img);
