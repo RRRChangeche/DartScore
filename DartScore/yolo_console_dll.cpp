@@ -273,7 +273,7 @@ public:
 int main(int argc, char *argv[])
 {
     std::string  names_file = "data/dart.names";
-    std::string  cfg_file = "cfg/yolov4-dart.cfg";
+    std::string  cfg_file = "cfg/yolov4-tiny-dart.cfg";
     std::string  weights_file = "weights/yolov4-tiny-dart_final.weights";
     std::string filename;
 
