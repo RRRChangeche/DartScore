@@ -9,7 +9,7 @@
 #include <atomic>
 #include <mutex>         // std::mutex, std::unique_lock
 #include <cmath>
-
+#include <map>
 
 // It makes sense only for video-Camera (not for video-File)
 // To use - uncomment the following line. Optical-flow is supported only by OpenCV 3.x - 4.x
@@ -21,7 +21,8 @@
 
 
 #include "yolo_v2_class.hpp"    // imported functions from DLL
-
+#include "utility.h";
+std::map<std::string, std::pair<int, int>> calibratePoints_std = { {"topP", {262,49}}, {"bottomP", {204,411}}, {"leftP", {53,196}}, {"rightP", {417, 255}} };
 
 #ifdef OPENCV
 #ifdef ZED_STEREO
@@ -669,6 +670,8 @@ int main(int argc, char *argv[])
             else {    // image file
                 // to achive high performance for multiple images do these 2 lines in another thread
                 cv::Mat mat_img = cv::imread(filename);
+                //int scale = mat_img.size().width / 400;
+                //cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
                 auto det_image = detector.mat_to_image_resize(mat_img);
 
                 auto start = std::chrono::steady_clock::now();
@@ -678,7 +681,10 @@ int main(int argc, char *argv[])
                 std::cout << " Time: " << spent.count() << " sec \n";
 
                 //result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
-                draw_boxes(mat_img, result_vec, obj_names);
+                //draw_boxes(mat_img, result_vec, obj_names);
+                cv::Mat M = cv::Mat::eye(3, 3, CV_64F); // transformation matrix (default=unit matrix)
+                draw_scoreArea(mat_img, result_vec, obj_names, calibratePoints_std, M);
+                draw_darts(mat_img, result_vec, obj_names, M);
                 cv::imshow("window name", mat_img);
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);
