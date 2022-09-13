@@ -683,9 +683,13 @@ int main(int argc, char *argv[])
                 //result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
                 //draw_boxes(mat_img, result_vec, obj_names);
                 cv::Mat M = cv::Mat::eye(3, 3, CV_64F); // transformation matrix (default=unit matrix)
-                draw_scoreArea(mat_img, result_vec, obj_names, calibratePoints_std, M);
-                draw_darts(mat_img, result_vec, obj_names, M);
-                cv::imshow("window name", mat_img);
+                float scale = 0.0;
+                draw_scoreArea(mat_img, result_vec, obj_names, calibratePoints_std, M, scale);
+                draw_darts(mat_img, result_vec, obj_names, M, scale);
+                crop_dartBoard_by_calibratedPoints(mat_img, calibratePoints_std);
+
+                cv::namedWindow("window", cv::WINDOW_AUTOSIZE);
+                cv::imshow("window", mat_img);
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);
             }
