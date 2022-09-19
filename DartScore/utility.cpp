@@ -1,7 +1,9 @@
 //#include <map>
 //#include <string>
 #include <iostream>
+#include <math.h>
 #include "utility.h";
+#define PI 3.14159265
 
 using namespace std;
 
@@ -12,6 +14,28 @@ void resize_to_std(cv::Mat& mat_img, cv::Point2f* srcPoints, cv::Point2f* dstPoi
 	cv::resize(mat_img, mat_img, cv::Size(), scale, scale);
 	for (int i = 0; i < 4; i++) srcPoints[i] *= scale;
 }
+
+float getDegreeFrom2Vector(const cv::Point2f& v1, const cv::Point2f& v2) {
+	cv::Point2f p1(v1), p2(v2);
+	double d1 = cv::norm(p1), d2 = cv::norm(p2);
+	double dot = p1.dot(p2);
+	double cross = p1.cross(p2);
+	// if (cross < 0) means vector located at 3 or 4 Quadrant
+	// arccos = 0 ~ pi
+	// make sure output = 0 ~ 2pi
+	float theta = 0.0;
+	if (cross < 0) theta = (std::acos(dot / (d1 * d2)) + PI) / PI * 180;
+	else theta = std::acos(dot / (d1 * d2)) / PI * 180;
+	return theta;
+}
+
+cv::Point2f polar2xy(const cv::Point& center, float R, float theta) {
+	// theta in degrees from 0.0 to 360.0
+	//return (round(center[0] + r * np.cos(theta * np.pi / 180.0 - 0.5 * np.pi)), round(center[1] + r * np.sin(theta * np.pi / 180.0 - 0.5 * np.pi)))
+	theta = theta * PI / 180.0;	// degree to radian
+	return cv::Point2f(center) + R * cv::Point2f(sin(theta), cos(theta));
+}
+
 
 void draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, 
 	std::map<std::string, std::pair<int, int>> calPoints_stdmap, cv::Mat& M, float& scale)
@@ -62,7 +86,7 @@ void draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec, std::vecto
 		cv::imshow("Origin", mat_img);
 		M = cv::getPerspectiveTransform(srcPoints, dstPoints);
 		cv::warpPerspective(mat_img, mat_img, M, mat_img.size());
-
+		for (const auto& p : dstPoints) cv::circle(mat_img, p, 2, { 0,225,0 }, 2);	// draw calibrate points
 		cout << "Calibrated points catched!\n M = \n" << M << endl;
 	}
 	else {
@@ -70,7 +94,29 @@ void draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec, std::vecto
 		return;
 	}
 
-	// Draw score area 
+	// Draw score area grid
+	// find center of dartboard
+	cv::Point tp = dstPoints[0], bp = dstPoints[1], lp = dstPoints[2], rp = dstPoints[3];
+	cv::Point center((tp.x + bp.x + lp.x + rp.x) / 4 + 2, (tp.y + bp.y + lp.y + rp.y) / 4 + 3);
+	cv::circle(mat_img, center, 2, { 0,255,0 }, 2);
+	// Calibrateinital angle start from direction {0, 1}
+	float iangle = (
+		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(tp - center)) - 9 +
+		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(rp - center)) - 99 +
+		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(bp - center)) - 189 +
+		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(lp - center)) - 279) / 4.0;
+
+	float R = (cv::norm(center - tp) + cv::norm(center - bp) + cv::norm(center - lp) + cv::norm(center - rp)) / 4.0;
+	float Rscale[6] = { 12.7, 32, 182, 214, 308, 340 }; 
+	// draw circle grid 
+	for (auto& scale : Rscale) {
+		scale /= 340.0;
+		cv::circle(mat_img, center, R * scale, { 0, 255, 0 }, 1);
+	}
+	// draw line grid
+	for (float i = 9+iangle; i < 369+iangle; i += 18) {
+		cv::line(mat_img, cv::Point(polar2xy(center, R*32/340, i)), cv::Point(polar2xy(center, R, i)), { 0, 255, 0 }, 1);
+	}
 }
 
 void draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names, cv::Mat M, float& scale)
@@ -85,8 +131,8 @@ void draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std
 	cv::perspectiveTransform(srcPoints, dstPoints, M);
 
 	// draw darts position
-	for (auto& p : dstPoints) {
-		cv::circle(mat_img, p, 2, { 0,225,0 }, 2);
+	for (const auto& p : dstPoints) {
+		cv::circle(mat_img, p, 2, { 0,0,225 }, 2);
 	}
 }
 
@@ -110,5 +156,8 @@ void crop_dartBoard_by_calibratedPoints(cv::Mat& mat_img, std::map<std::string, 
 	mat_img = mat_img(cv::Range(row_start, row_end), cv::Range(col_start, col_end));
 	//cv::rectangle(mat_img, cv::Rect(cv::Point2i(col_start, row_start), cv::Point2i(col_end, row_end)), { 0,255,0 }, 2);
 }
+
+
+
 
 #endif    // OPENCV

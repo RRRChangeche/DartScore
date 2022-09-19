@@ -24,6 +24,8 @@
 #include "utility.h";
 std::map<std::string, std::pair<int, int>> calibratePoints_std = { {"topP", {262,49}}, {"bottomP", {204,411}}, {"leftP", {53,196}}, {"rightP", {417, 255}} };
 
+
+
 #ifdef OPENCV
 #ifdef ZED_STEREO
 #include <sl/Camera.hpp>
@@ -273,9 +275,9 @@ public:
 
 int main(int argc, char *argv[])
 {
-    std::string  names_file = "data/dart.names";
-    std::string  cfg_file = "cfg/yolov4-tiny-dart.cfg";
-    std::string  weights_file = "weights/yolov4-tiny-dart_final.weights";
+    std::string  names_file = "./data/dart.names";
+    std::string  cfg_file = "./cfg/yolov4-tiny-dart.cfg";
+    std::string  weights_file = "./weights/yolov4-tiny-dart_final.weights";
     std::string filename;
 
     if (argc > 4) {    //voc.names yolo-voc.cfg yolo-voc.weights test.mp4
@@ -287,7 +289,7 @@ int main(int argc, char *argv[])
     else if (argc > 1) filename = argv[1];
 
     float const thresh = (argc > 5) ? std::stof(argv[5]) : 0.2;
-
+    
     Detector detector(cfg_file, weights_file);
 
     auto obj_names = objects_names_from_file(names_file);
@@ -688,7 +690,7 @@ int main(int argc, char *argv[])
                 draw_darts(mat_img, result_vec, obj_names, M, scale);
                 crop_dartBoard_by_calibratedPoints(mat_img, calibratePoints_std);
 
-                cv::namedWindow("window", cv::WINDOW_AUTOSIZE);
+                cv::namedWindow("window", cv::WINDOW_KEEPRATIO);
                 cv::imshow("window", mat_img);
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);
