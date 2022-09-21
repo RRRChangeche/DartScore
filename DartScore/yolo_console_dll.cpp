@@ -671,12 +671,20 @@ int main(int argc, char *argv[])
                     }
 
             }
-            else {    // image file
-                // to achive high performance for multiple images do these 2 lines in another thread
+            else {    
+                // image file
+                // check file exist or not (#include <sys/stat.h>)
+                struct stat info;
+                if (stat(filename.c_str(), &info) != 0) {
+                    filename.clear();
+                    std::cout << "File not found! Please check file path." << std::endl;
+                    continue;
+                }
                 cv::Mat mat_img = cv::imread(filename);
 
-                //int scale = mat_img.size().width / 400;
-                //cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
+                // to achive high performance for multiple images do these 2 lines in another thread
+                int scale = mat_img.size().width / 400;
+                cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
                 auto det_image = detector.mat_to_image_resize(mat_img);
 
                 auto start = std::chrono::steady_clock::now();
