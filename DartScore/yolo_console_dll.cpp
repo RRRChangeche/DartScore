@@ -21,9 +21,11 @@
 
 
 #include "yolo_v2_class.hpp"    // imported functions from DLL
+# define DARTBOARD
+# ifdef DARTBOARD
 #include "utility.h";
-std::map<std::string, std::pair<int, int>> calibratePoints_std = { {"topP", {262,49}}, {"bottomP", {204,411}}, {"leftP", {53,196}}, {"rightP", {417, 255}} };
-
+#include <sys/stat.h>
+# endif
 
 
 #ifdef OPENCV
@@ -672,6 +674,7 @@ int main(int argc, char *argv[])
             else {    // image file
                 // to achive high performance for multiple images do these 2 lines in another thread
                 cv::Mat mat_img = cv::imread(filename);
+
                 //int scale = mat_img.size().width / 400;
                 //cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
                 auto det_image = detector.mat_to_image_resize(mat_img);
@@ -684,13 +687,12 @@ int main(int argc, char *argv[])
 
                 //result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
                 //draw_boxes(mat_img, result_vec, obj_names);
-                cv::Mat M = cv::Mat::eye(3, 3, CV_64F); // transformation matrix (default=unit matrix)
-                float scale = 0.0;
-                draw_scoreArea(mat_img, result_vec, obj_names, calibratePoints_std, M, scale);
-                draw_darts(mat_img, result_vec, obj_names, M, scale);
-                crop_dartBoard_by_calibratedPoints(mat_img, calibratePoints_std);
-
-                cv::namedWindow("window", cv::WINDOW_KEEPRATIO);
+                DartBoard dartboard;
+                dartboard.draw_scoreArea(mat_img, result_vec, obj_names);
+                dartboard.draw_darts(mat_img, result_vec, obj_names);
+                dartboard.crop_dartBoard_by_calibratedPoints(mat_img);
+                
+                cv::namedWindow("window", cv::WINDOW_NORMAL);
                 cv::imshow("window", mat_img);
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);

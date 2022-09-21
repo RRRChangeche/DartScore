@@ -464,4 +464,7 @@ FodyWeavers.xsd
 *.sln
 
 # End of https://www.toptal.com/developers/gitignore/api/windows,visualstudio,c++
+
+# Others
 DartScore/weights/yolov4-tiny-dart_final.weights
+*.zip
