@@ -17,22 +17,20 @@ void resize_to_std(cv::Mat& mat_img, cv::Point2f* srcPoints, cv::Point2f* dstPoi
 }
 
 float getDegreeFrom2Vector(const cv::Point2f& v1, const cv::Point2f& v2) {
-	cv::Point2f p1(v1), p2(v2);
-	double d1 = cv::norm(p1), d2 = cv::norm(p2);
-	double dot = p1.dot(p2);
-	double cross = p1.cross(p2);
+	double d1 = cv::norm(v1), d2 = cv::norm(v2);
+	double dot = v1.dot(v2);
+	double cross = v1.cross(v2);
 	// if (cross < 0) means vector located at 3 or 4 Quadrant
-	// arccos = 0 ~ pi
+	// acos = 0 ~ pi
 	// make sure output = 0 ~ 2pi
 	float theta = 0.0;
-	if (cross < 0) theta = (std::acos(dot / (d1 * d2)) + PI) / PI * 180;
+	if (cross < 0) theta = (2 * PI - std::acos(dot / (d1 * d2))) / PI * 180;
 	else theta = std::acos(dot / (d1 * d2)) / PI * 180;
 	return theta;
 }
 
 cv::Point2f polar2xy(const cv::Point& center, float R, float theta) {
 	// theta in degrees from 0.0 to 360.0
-	//return (round(center[0] + r * np.cos(theta * np.pi / 180.0 - 0.5 * np.pi)), round(center[1] + r * np.sin(theta * np.pi / 180.0 - 0.5 * np.pi)))
 	theta = theta * PI / 180.0;	// degree to radian
 	return cv::Point2f(center) + R * cv::Point2f(sin(theta), cos(theta));
 }
@@ -45,7 +43,6 @@ bool findIntersection(cv::Point2f a1, cv::Point2f a2, cv::Point2f b1, cv::Point2
 	cv::Point2f d2 = b2 - b1;
 
 	float cross = d1.cross(d2);
-	//float cross = d1.x * d2.y - d1.y * d2.x;
 	if (abs(cross) < /*EPS*/1e-8) return false;
 
 	double t1 = (x.x * d2.y - x.y * d2.x) / cross;
@@ -82,8 +79,6 @@ void DartBoard::draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec,
 {
 	// get calibrate points
 	// Points = {topP, bottomP, leftP, rightP}
-	//cv::Point2f dstPoints[4];	// standard front-view points
-	//cv::Point2f srcPoints[4];	// perspective view points from result
 	for (auto& i : result_vec) {
 		if (obj_names.size() > i.obj_id) {
 			string obj_name = obj_names[i.obj_id];
@@ -133,7 +128,6 @@ void DartBoard::draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec,
 		cv::warpPerspective(mat_img, mat_img, M, mat_img.size());
 		// draw calibrate points
 		for (const auto& p : dstPoints) cv::circle(mat_img, p, 2, { 0,225,0 }, 2);	
-		//cout << "Calibrated points catched!\n M = \n" << M << endl;
 		cout << "Calibrated points catched!" << endl;
 	}
 	else {
@@ -150,20 +144,22 @@ void DartBoard::draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec,
 	else center = center2;
 	cv::circle(mat_img, center, 2, { 0,255,0 }, 2);
 	// Calibrateinital angle start from direction {0, 1}
+	cv::Point2f vt(tp - center); vt.y *= -1;
+	cv::Point2f vb(bp - center); vb.y *= -1;
+	cv::Point2f vl(lp - center); vl.y *= -1;
+	cv::Point2f vr(rp - center); vr.y *= -1;
+	cv::Point2f v0(0, 1);
 	float iangle = (
-		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(tp - center)) - 9 +
-		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(rp - center)) - 99 +
-		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(bp - center)) - 189 +
-		getDegreeFrom2Vector(cv::Point2f({ 0,1 }), cv::Point2f(lp - center)) - 279) / 4.0;
+		getDegreeFrom2Vector(vt, v0) - 9.0 + getDegreeFrom2Vector(vr, v0) - 99.0 +
+		getDegreeFrom2Vector(vb, v0) - 189.0 + getDegreeFrom2Vector(vl, v0) - 279) / 4.0;
 
-	float R = (cv::norm(center - tp) + cv::norm(center - bp) + cv::norm(center - lp) + cv::norm(center - rp)) / 4.0;
-	//float Rscale[6] = { 12.7, 32, 182, 214, 308, 340 }; 
+	this->R = (cv::norm(center - tp) + cv::norm(center - bp) + cv::norm(center - lp) + cv::norm(center - rp)) / 4.0;
 	// draw circle grid 
 	for (auto& scale : Rscale) {
-		scale /= 340.0;
-		cv::circle(mat_img, center, R * scale, { 0, 255, 0 }, 1);
+		cv::circle(mat_img, center, (R * scale) / 340, { 0, 255, 0 }, 1);
 	}
 	// draw line grid
+	cout << "iangle: " << iangle << endl;
 	for (float i = 9+iangle; i < 369+iangle; i += 18) {
 		cv::line(mat_img, cv::Point(polar2xy(center, R*32/340, i)), cv::Point(polar2xy(center, R, i)), { 0, 255, 0 }, 1);
 	}
@@ -186,34 +182,39 @@ void DartBoard::draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std:
 		return;
 	}
 
-	cv::Point tp = dstDartPoints[0];	// topP
-	cv::Point v0(tp - center);	// vector from center to topP
+	cv::Point tp = dstPoints[0];	// topP
+	cv::Point v0(tp - center);		// vector from center to topP
+	v0.y *= -1;						// hence image's y is from low to high, reverse from vector calculation
+	//cv::line(mat_img, tp, center, { 0,0,255 }, 2);
 	for (const auto& pos : dstDartPoints) {
 		// calculate score
 		cv::Point vdart(cv::Point(pos)-center); // vector from center to dart
+		vdart.y *= -1;	
 		double ddart = cv::norm(vdart);
 
 		// calculate degree
-		float theta = getDegreeFrom2Vector(v0, vdart);
+		float theta = getDegreeFrom2Vector(vdart, v0);
 		int score = scoreMap[int(theta / 18)];
 		string scoreText = to_string(score);
 
 		// calculate Rscale
-		float rscale = ddart / R;
+		double rscale = ddart / R * 340.0;
 		string scaleText = "";
 		if (rscale <= Rscale[0]) { // DBull
 			scaleText = "DBULL";
+			scoreText = "";
 			score = 50;
 		}
-		else if (Rscale[0] < rscale <= Rscale[1]) { // SBULL
+		else if (Rscale[0] < rscale and rscale <= Rscale[1]) { // SBULL
 			scaleText = "SBULL";
+			scoreText = "";
 			score = 50;
 		}
-		else if (Rscale[2] < rscale <= Rscale[3]) { // Triple area
+		else if (Rscale[2] < rscale and rscale <= Rscale[3]) { // Triple area
 			scaleText = "T";
 			score *= 3;
 		}
-		else if (Rscale[4] < rscale <= Rscale[5]) { // Double area
+		else if (Rscale[4] < rscale and scale <= Rscale[5]) { // Double area
 			scaleText = "D";
 			score *= 2;
 		}

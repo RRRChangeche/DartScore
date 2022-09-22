@@ -683,15 +683,12 @@ int main(int argc, char *argv[])
                 cv::Mat mat_img = cv::imread(filename);
 
                 // to achive high performance for multiple images do these 2 lines in another thread
-                int scale = mat_img.size().width / 400;
-                cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
+                //int scale = mat_img.size().width / 400;
+                //cv::resize(mat_img, mat_img, cv::Size(400, mat_img.size().height / scale));
                 auto det_image = detector.mat_to_image_resize(mat_img);
 
                 auto start = std::chrono::steady_clock::now();
                 std::vector<bbox_t> result_vec = detector.detect_resized(*det_image, mat_img.size().width, mat_img.size().height);
-                auto end = std::chrono::steady_clock::now();
-                std::chrono::duration<double> spent = end - start;
-                std::cout << " Time: " << spent.count() << " sec \n";
 
                 //result_vec = detector.tracking_id(result_vec);    // comment it - if track_id is not required
                 //draw_boxes(mat_img, result_vec, obj_names);
@@ -700,6 +697,10 @@ int main(int argc, char *argv[])
                 dartboard.draw_darts(mat_img, result_vec, obj_names);
                 dartboard.crop_dartBoard_by_calibratedPoints(mat_img);
                 
+                auto end = std::chrono::steady_clock::now();
+                std::chrono::duration<double> spent = end - start;
+                std::cout << " Time: " << spent.count() << " sec \n";
+
                 cv::namedWindow("window", cv::WINDOW_NORMAL);
                 cv::imshow("window", mat_img);
                 show_console_result(result_vec, obj_names);

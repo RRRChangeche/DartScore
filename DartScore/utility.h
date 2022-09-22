@@ -19,6 +19,7 @@ private:
 	//vector<cv::Point2f> dartPoints;	// dart points
 	cv::Mat M;		// perspective transformation matrix 
 	float scale;	// scale from source img size to standard img size
+	//float* Rscale;	// score area radius
 	float Rscale[6] = { 12.7, 32, 182, 214, 308, 340 };	// score area radius
 	float R;		// outer radius of score area
 	cv::Point center;	// center of dartboard
