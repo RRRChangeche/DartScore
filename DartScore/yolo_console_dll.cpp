@@ -628,10 +628,17 @@ int main(int argc, char *argv[])
 
                     detection_data = draw2show.receive();
                     cv::Mat draw_frame = detection_data.draw_frame;
+                    std::vector<bbox_t> result_vec = detection_data.result_vec;
 
                     //if (extrapolate_flag) {
                     //    cv::putText(draw_frame, "extrapolate", cv::Point2f(10, 40), cv::FONT_HERSHEY_COMPLEX_SMALL, 1.0, cv::Scalar(50, 50, 0), 2);
                     //}
+
+                    // DartScore by RRR
+                    DartBoard dartboard;
+                    dartboard.draw_scoreArea(draw_frame, result_vec, obj_names);
+                    dartboard.draw_darts(draw_frame, result_vec, obj_names);
+                    dartboard.crop_dartBoard_by_calibratedPoints(draw_frame);
 
                     cv::imshow("window name", draw_frame);
                     int key = cv::waitKey(3);    // 3 or 16ms

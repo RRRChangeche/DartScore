@@ -167,6 +167,7 @@ void DartBoard::draw_scoreArea(cv::Mat& mat_img, std::vector<bbox_t> result_vec,
 
 void DartBoard::draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std::vector<std::string> obj_names)
 {
+	// collect dart points and calibrate to front-view 
 	vector<cv::Point2f> srcDartPoints;
 	vector<cv::Point2f> dstDartPoints;
 	for (auto& i : result_vec) {
@@ -174,13 +175,13 @@ void DartBoard::draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std:
 			srcDartPoints.push_back(cv::Point2f(i.x + i.w / 2, i.y + i.h / 2) * scale);	// scale srcPoints to map dstPoints's position
 		}
 	}
-	cv::perspectiveTransform(srcDartPoints, dstDartPoints, M);
-
-	// draw darts position and check score 
 	if (dstDartPoints.size() == 0) {
 		cout << "No darts detecred!" << endl;
 		return;
 	}
+
+	// draw darts position and check score 
+	cv::perspectiveTransform(srcDartPoints, dstDartPoints, M);
 
 	cv::Point tp = dstPoints[0];	// topP
 	cv::Point v0(tp - center);		// vector from center to topP
