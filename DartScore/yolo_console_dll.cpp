@@ -24,7 +24,8 @@
 # define DARTBOARD
 # ifdef DARTBOARD
 #include "utility.h";
-#include <sys/stat.h>
+//#include <sys/stat.h>
+#include <filesystem>
 # endif
 
 
@@ -680,11 +681,16 @@ int main(int argc, char *argv[])
             }
             else {    
                 // image file
-                // check file exist or not (#include <sys/stat.h>)
-                struct stat info;
+                // check if file exists (#include <sys/stat.h>)
+                /*struct stat info;
                 if (stat(filename.c_str(), &info) != 0) {
                     filename.clear();
-                    std::cout << "File not found! Please check file path." << std::endl;
+                    std::cout << "File not found! Please check the file path..." << std::endl;
+                    continue;
+                }*/
+                if (!std::filesystem::exists(std::filesystem::path(filename))) {
+                    filename.clear();
+                    std::cout << "File not found! Please check the file path..." << std::endl;
                     continue;
                 }
                 cv::Mat mat_img = cv::imread(filename);
@@ -708,7 +714,7 @@ int main(int argc, char *argv[])
                 std::chrono::duration<double> spent = end - start;
                 std::cout << " Time: " << spent.count() << " sec \n";
 
-                cv::namedWindow("window", cv::WINDOW_NORMAL);
+                //cv::namedWindow("window", cv::WINDOW_NORMAL);
                 cv::imshow("window", mat_img);
                 show_console_result(result_vec, obj_names);
                 cv::waitKey(0);

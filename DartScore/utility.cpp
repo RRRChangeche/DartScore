@@ -175,7 +175,8 @@ void DartBoard::draw_darts(cv::Mat mat_img, std::vector<bbox_t> result_vec, std:
 			srcDartPoints.push_back(cv::Point2f(i.x + i.w / 2, i.y + i.h / 2) * scale);	// scale srcPoints to map dstPoints's position
 		}
 	}
-	if (dstDartPoints.size() == 0) {
+
+	if (srcDartPoints.size() == 0) {
 		cout << "No darts detecred!" << endl;
 		return;
 	}
